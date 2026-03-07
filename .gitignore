@@ -1,2 +1,5 @@
 .env
-.idea/*
+.env.swp
+.env.swo
+.idea
+.ipynb_checkpoints

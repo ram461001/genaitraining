@@ -1,0 +1,137 @@
+ Plan: Pizza Hut Chatbot with SQLite Database Tools                                             │
+     │                                                                                                │
+     │ Context                                                                                        │
+     │                                                                                                │
+     │ Extend the existing Pizza Hut chatbot to use a real SQLite database instead of hardcoded menu  │
+     │ text.                                                                                          │
+     │ The agent will use LangChain tools to query the menu and place orders, demonstrating how LLMs  │
+     │ interact with databases.                                                                       │
+     │                                                                                                │
+     │ File to Create                                                                                 │
+     │                                                                                                │
+     │ /Users/ram/Desktop/genaitraining/homework/homework_2_sqlite_chatbot.ipynb                      │
+     │                                                                                                │
+     │ ---                                                                                            │
+     │ Notebook Structure                                                                             │
+     │                                                                                                │
+     │ Cell 1 — Install Dependencies                                                                  │
+     │                                                                                                │
+     │ pip install langchain langchain-ollama gradio --quiet                                          │
+     │                                                                                                │
+     │ Cell 2 — Set Up SQLite Database                                                                │
+     │                                                                                                │
+     │ Create two tables and seed with data:                                                          │
+     │                                                                                                │
+     │ menu table                                                                                     │
+     │                                                                                                │
+     │ ┌─────┬────────────┬───────┬───────┬─────────────────────────────────────┐                     │
+     │ │ id  │    name    │ size  │ price │             description             │                     │
+     │ ├─────┼────────────┼───────┼───────┼─────────────────────────────────────┤                     │
+     │ │ 1   │ Margherita │ Small │ 8.0   │ tomato sauce, mozzarella, basil     │                     │
+     │ ├─────┼────────────┼───────┼───────┼─────────────────────────────────────┤                     │
+     │ │ 2   │ Pepperoni  │ Large │ 18.0  │ tomato sauce, mozzarella, pepperoni │                     │
+     │ ├─────┼────────────┼───────┼───────┼─────────────────────────────────────┤                     │
+     │ │ ... │ ...        │ ...   │ ...   │ ...                                 │                     │
+     │ └─────┴────────────┴───────┴───────┴─────────────────────────────────────┘                     │
+     │                                                                                                │
+     │ orders table                                                                                   │
+     │                                                                                                │
+     │ ┌─────┬───────────┬──────┬──────────┬───────┬────────┬────────────┐                            │
+     │ │ id  │ item_name │ size │ quantity │ price │ status │ created_at │                            │
+     │ ├─────┼───────────┼──────┼──────────┼───────┼────────┼────────────┤                            │
+     │ └─────┴───────────┴──────┴──────────┴───────┴────────┴────────────┘                            │
+     │                                                                                                │
+     │ import sqlite3                                                                                 │
+     │                                                                                                │
+     │ def get_connection():                                                                          │
+     │     return sqlite3.connect('pizzahut.db')                                                      │
+     │                                                                                                │
+     │ # Create tables and seed menu data                                                             │
+     │                                                                                                │
+     │ Cell 3 — Define Tools                                                                          │
+     │                                                                                                │
+     │ Tool 1: get_menu                                                                               │
+     │ @tool                                                                                          │
+     │ def get_menu() -> str:                                                                         │
+     │     """Fetches all available items from the Pizza Hut menu."""                                 │
+     │     # SELECT * FROM menu                                                                       │
+     │     # Returns formatted string of menu items                                                   │
+     │                                                                                                │
+     │ Tool 2: place_order                                                                            │
+     │ @tool                                                                                          │
+     │ def place_order(item_name: str, size: str, quantity: int) -> str:                              │
+     │     """Places an order for a menu item. Requires item name, size, and quantity."""             │
+     │     # 1. Verify item exists in menu                                                            │
+     │     # 2. INSERT into orders table                                                              │
+     │     # 3. Return order confirmation with total price                                            │
+     │                                                                                                │
+     │ Tool 3: get_orders                                                                             │
+     │ @tool                                                                                          │
+     │ def get_orders() -> str:                                                                       │
+     │     """Retrieves all current orders placed in this session."""                                 │
+     │     # SELECT * FROM orders                                                                     │
+     │     # Returns formatted list of orders                                                         │
+     │                                                                                                │
+     │ Cell 4 — System Prompt                                                                         │
+     │                                                                                                │
+     │ You are a Pizza Hut ordering assistant.                                                        │
+     │ - Use get_menu to show available items                                                         │
+     │ - Use place_order to place customer orders                                                     │
+     │ - Use get_orders to show what has been ordered                                                 │
+     │ - Always confirm the order details before placing                                              │
+     │ - Always mention the price when showing menu items                                             │
+     │                                                                                                │
+     │ Cell 5 — LLM + Tool Setup                                                                      │
+     │                                                                                                │
+     │ llm = ChatOllama(model='llama3.2', temperature=0.7)                                            │
+     │ tools = [get_menu, place_order, get_orders]                                                    │
+     │ llm_with_tools = llm.bind_tools(tools)                                                         │
+     │                                                                                                │
+     │ Cell 6 — Agent Loop Function                                                                   │
+     │                                                                                                │
+     │ Reuse the same agent loop pattern from homework_1 and pizza_hut_chatbot:                       │
+     │ def run_agent(user_message, history):                                                          │
+     │     messages = [SystemMessage(content=SYSTEM_PROMPT)]                                          │
+     │     # convert history dicts → LangChain messages                                               │
+     │     # append HumanMessage                                                                      │
+     │     # while loop: invoke → check tool_calls → execute → ToolMessage                            │
+     │     # return final response content                                                            │
+     │                                                                                                │
+     │ Cell 7 — Test Without UI                                                                       │
+     │                                                                                                │
+     │ # Test sequence                                                                                │
+     │ queries = [                                                                                    │
+     │     "What's on the menu?",                                                                     │
+     │     "I'd like to order 2 large Pepperoni pizzas",                                              │
+     │     "Show me my orders"                                                                        │
+     │ ]                                                                                              │
+     │                                                                                                │
+     │ Cell 8 — Gradio UI                                                                             │
+     │                                                                                                │
+     │ Same pattern as Pizza Hut chatbot:                                                             │
+     │ with gr.Blocks(title='Pizza Hut Order Bot') as demo:                                           │
+     │     gr.Markdown("# 🍕 Pizza Hut Order Bot")                                                    │
+     │     chatbot = gr.Chatbot(height=450)                                                           │
+     │     msg = gr.Textbox(...)                                                                      │
+     │     clear = gr.Button('Clear Chat')                                                            │
+     │     msg.submit(chat, [msg, chatbot], [msg, chatbot])                                           │
+     │ demo.launch(theme=gr.themes.Soft())                                                            │
+     │                                                                                                │
+     │ ---                                                                                            │
+     │ Key Patterns Reused                                                                            │
+     │                                                                                                │
+     │ - @tool decorator — from 1.7 langchain_tools.ipynb                                             │
+     │ - Agent while loop — from homework/homework_1_tools.ipynb                                      │
+     │ - Chat history format ({'role': ..., 'content': ...}) — from Week1/2.2 pizza_hut_chatbot.ipynb │
+     │ - Gradio UI structure — from Week1/2.2 pizza_hut_chatbot.ipynb                                 │
+     │ - SystemMessage + HumanMessage + AIMessage + ToolMessage pattern — from all existing notebooks │
+     │                                                                                                │
+     │ ---                                                                                            │
+     │ Verification                                                                                   │
+     │                                                                                                │
+     │ 1. Run all cells top to bottom                                                                 │
+     │ 2. Cell 2: confirm pizzahut.db is created and seeded                                           │
+     │ 3. Cell 3: invoke each tool directly and verify output                                         │
+     │ 4. Cell 7: test queries return correct answers                                                 │
+     │ 5. Cell 8: Gradio UI launches at http://127.0.0.1:7860                                         │
+     │ 6. In UI: ask for menu → place an order → check orders

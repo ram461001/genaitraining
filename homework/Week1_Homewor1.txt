@@ -1,0 +1,25 @@
+# Homerwork
+
+
+  ┌──────┬────────────────────────────────────────────────────────┐
+  │ Step │                      Description                       │
+  ├──────┼────────────────────────────────────────────────────────┤
+  │ 1    │ Create a sample .txt file to work with                 │
+  ├──────┼────────────────────────────────────────────────────────┤
+  │ 2    │ Define read_file and get_content_length tools          │
+  ├──────┼────────────────────────────────────────────────────────┤
+  │ 3    │ Bind tools to the LLM                                  │
+  ├──────┼────────────────────────────────────────────────────────┤
+  │ 4    │ Build the agent loop — model calls tools automatically │
+  ├──────┼────────────────────────────────────────────────────────┤
+  │ 5    │ Try more questions on the file                         │
+  └──────┴────────────────────────────────────────────────────────┘
+
+  How this will work  :
+  "How many characters in sample.txt?"
+    → calls read_file('sample.txt')
+    → calls get_content_length(content)
+    → "The file contains 323 characters."
+
+
+

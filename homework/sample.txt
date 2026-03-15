@@ -1,0 +1,12 @@
+Welcome to the AI Training Course.
+
+This course covers the fundamentals of large language models,
+prompt engineering, RAG pipelines, and building AI-powered applications.
+
+Topics include:
+- Tokenization and embeddings
+- LangChain tools and agents
+- Vector stores and retrieval
+- Conversational AI with memory
+
+We hope you enjoy the journey into generative AI!

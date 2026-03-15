@@ -1,0 +1,31 @@
+
+Acme Corp Employee Handbook
+
+Section 1: Working Hours
+Standard working hours are 9am to 5pm, Monday to Friday.
+Employees may request flexible working hours with manager approval.
+Overtime must be pre-approved and will be compensated at 1.5x the hourly rate.
+
+Section 2: Leave Policy
+All full-time employees receive 20 days of annual leave per year.
+Sick leave is up to 10 days per year with a medical certificate.
+Parental leave is 16 weeks fully paid for primary caregivers.
+Leave requests must be submitted at least 2 weeks in advance.
+
+Section 3: Remote Work
+Employees may work remotely up to 3 days per week.
+A reliable internet connection is required for remote work.
+Remote workers must be available during core hours: 10am to 3pm.
+All remote work equipment is provided by the company.
+
+Section 4: Code of Conduct
+Employees are expected to treat colleagues with respect and professionalism.
+Harassment, discrimination, or bullying of any kind will not be tolerated.
+Confidential company information must not be shared outside the organization.
+Violations of the code of conduct may result in disciplinary action.
+
+Section 5: Benefits
+Health insurance is provided for all full-time employees and their immediate family.
+A gym membership subsidy of $50 per month is available.
+Employees receive a $1,000 annual learning and development budget.
+Free meals are provided in the office cafeteria.

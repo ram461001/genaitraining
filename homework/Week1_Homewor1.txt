@@ -1,25 +1,126 @@
-# Homerwork
+Homework 1 — Build a File Reading Agent with LangChain Tools
+=============================================================
 
+WHAT YOU WILL BUILD
+--------------------
+An AI agent that can read files and answer questions about them
+by deciding which tools to call — automatically.
 
-  ┌──────┬────────────────────────────────────────────────────────┐
-  │ Step │                      Description                       │
-  ├──────┼────────────────────────────────────────────────────────┤
-  │ 1    │ Create a sample .txt file to work with                 │
-  ├──────┼────────────────────────────────────────────────────────┤
-  │ 2    │ Define read_file and get_content_length tools          │
-  ├──────┼────────────────────────────────────────────────────────┤
-  │ 3    │ Bind tools to the LLM                                  │
-  ├──────┼────────────────────────────────────────────────────────┤
-  │ 4    │ Build the agent loop — model calls tools automatically │
-  ├──────┼────────────────────────────────────────────────────────┤
-  │ 5    │ Try more questions on the file                         │
-  └──────┴────────────────────────────────────────────────────────┘
-
-  How this will work  :
+Example flow:
   "How many characters in sample.txt?"
-    → calls read_file('sample.txt')
-    → calls get_content_length(content)
-    → "The file contains 323 characters."
+    -> calls read_file('sample.txt')
+    -> calls get_content_length('sample.txt')
+    -> "The file contains 360 characters."
+
+The model does NOT hardcode the answer — it uses tools to find it.
 
 
+PREREQUISITES (Before You Start)
+----------------------------------
+- Ollama running locally with llama3.1 or llama3.2 pulled
+- Completed notebooks 1.1 through 1.7
+- Basic Python knowledge (functions, file I/O, decorators)
 
+
+STEP-BY-STEP INSTRUCTIONS
+--------------------------
+
+Step 1 — Create a Sample .txt File
+  - Write a Python string with 4-6 lines of content (any topic you like)
+  - Save it to disk as 'sample.txt' using open() and write()
+  - Print a preview of the first 100 characters to confirm it saved
+
+
+Step 2 — Define Your Tools
+  Use the @tool decorator from langchain_core.tools to create two tools:
+
+  Tool A: read_file(filename: str) -> str
+    - Opens the file, reads all content, and returns it as a string
+    - If the file does not exist, return a helpful error message
+    - Add a clear docstring — the LLM reads this to decide when to use the tool
+
+  Tool B: get_content_length(filename: str) -> str
+    - Opens the file, reads it, and returns a sentence like:
+      "The file 'sample.txt' contains 360 characters."
+    - Also handle the file-not-found case
+
+  After defining them:
+    - Print each tool's .name and .description
+    - Call both tools directly with .invoke() to confirm they work
+
+
+Step 3 — Bind Tools to the LLM
+  - Create a ChatOllama instance (model='llama3.1', temperature=0)
+  - Put both tools in a list
+  - Create a tool_map dict: { tool.name: tool }
+  - Call llm.bind_tools(tools) and store the result
+  - Print the names of the bound tools to confirm
+
+
+Step 4 — Build the Agent Loop
+  Write a function run_agent(user_message: str) that:
+    1. Starts with a SystemMessage and a HumanMessage
+    2. Calls llm_with_tools.invoke(messages)
+    3. If response.tool_calls is empty -> print the final answer and return
+    4. Otherwise, for each tool call in response.tool_calls:
+        - Look up the tool in tool_map by name
+        - Call tool_fn.invoke(tool_call['args'])
+        - Append a ToolMessage with the result and tool_call_id
+    5. Loop back to step 2 with the updated messages
+
+  This is the core agentic loop — the model keeps calling tools
+  until it has enough information to answer.
+
+
+Step 5 — Test With At Least 5 Questions
+  Run run_agent() with these questions (and add your own!):
+
+    1. "How many characters are in sample.txt?"
+    2. "What topics are covered in sample.txt?"
+    3. "Read sample.txt and give me a one-line summary."
+    4. "Read sample.txt and tell me both its content and character count."
+    5. "What is in a file called missing.txt?"  <- tests the error case
+
+  For each question, observe:
+    - Which tool(s) did the model call?
+    - Was the final answer correct?
+
+
+Step 6 — Add a Third Tool (Your Own Invention)
+  Create one more tool of your choice. Ideas:
+    - count_words(filename)     -> counts words instead of characters
+    - count_lines(filename)     -> counts how many lines the file has
+    - search_in_file(filename, keyword) -> checks if a keyword exists in the file
+    - file_info(filename)       -> returns size in bytes + character count together
+
+  Bind it along with the other two tools and test it with a new question.
+
+
+Step 7 — Reflection (Write in a Markdown cell)
+  Answer these in your notebook:
+    1. What is the difference between calling a tool directly (.invoke)
+       and letting the model call it through the agent loop?
+    2. What would happen if you gave the model a very vague question
+       like "Tell me about the file"? Did it still work?
+    3. What was the most surprising thing the model did automatically?
+
+
+BONUS CHALLENGES (Optional)
+-----------------------------
+  Multi-file support   -> Modify read_file to accept a list of filenames
+                          and return all their contents combined
+  Ask without filename -> Try: "How long is the file?" (no filename given)
+                          Does the model ask for clarification or fail?
+  Explain tool calls   -> Print a clear log of every tool the model called
+                          and what arguments it used, formatted nicely
+  Error recovery       -> If a tool returns an error, can the model recover
+                          and still give a useful answer?
+
+
+WHAT TO SUBMIT
+---------------
+A Jupyter notebook (.ipynb) with:
+  - All 7 steps completed with printed outputs
+  - At least 5 questions answered using run_agent()
+  - Your custom third tool defined and tested
+  - The reflection markdown cell filled in

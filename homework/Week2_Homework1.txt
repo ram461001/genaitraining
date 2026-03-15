@@ -1,0 +1,88 @@
+Homework 1 — Build a RAG System on the Bhagavad Gita or Bible
+==============================================================
+
+WHAT YOU WILL BUILD
+--------------------
+A question-answering system that can answer questions like:
+  - "What does the Gita say about duty?"
+  - "What does the Bible say about forgiveness?"
+
+Using only the actual text of the book — not the LLM's general knowledge.
+
+
+PREREQUISITES (Before You Start)
+----------------------------------
+- Ollama running locally with llama3.1 pulled
+- Completed notebooks 2.1 through 2.6
+- Download the PDF of your chosen book (Gita or Bible) and place it in your Week2/ folder
+
+
+STEP-BY-STEP INSTRUCTIONS
+--------------------------
+
+Step 1 — Load the Book
+  - Use PyPDFLoader from LangChain to load the PDF
+  - Print how many pages were loaded
+  - Print the first page to make sure it loaded correctly
+
+Step 2 — Chunk the Text
+  - Use RecursiveCharacterTextSplitter to split the text into smaller pieces
+  - Try chunk_size=500 and chunk_overlap=100
+  - Print how many chunks were created
+  - Print 2-3 sample chunks and observe what they look like
+
+Step 3 — Create Embeddings & Vector Store
+  - Use OllamaEmbeddings with llama3.1
+  - Store the chunks in a Chroma vector store
+  - Save it to disk with persist_directory so you don't re-embed every time
+
+Step 4 — Build the RAG Chain
+  - Create a prompt that tells the LLM:
+      "You are a scholar of [Gita/Bible]. Answer only from the given context."
+      "If the answer is not in the context, say 'This is not mentioned in the text.'"
+  - Wire it together: retriever | prompt | llm
+
+Step 5 — Ask At Least 5 Questions
+  Test your system with meaningful questions.
+
+  For Gita:
+    1. What does Krishna say about action without attachment?
+    2. What is the nature of the soul according to the Gita?
+    3. What does the Gita say about a person of steady wisdom?
+    4. What are the three modes of nature?
+    5. What does Krishna say about those who worship other gods?
+
+  For Bible:
+    1. What does Jesus say about loving your enemies?
+    2. What is the meaning of the parable of the prodigal son?
+    3. What does the Bible say about faith and works?
+    4. How should a person treat the poor?
+    5. What does the Bible say about forgiveness?
+
+Step 6 — Compare RAG vs No RAG
+  - Ask the same question WITH and WITHOUT the RAG chain
+  - Print both answers side by side
+  - Write a short note: What was different? Which answer was more grounded?
+
+Step 7 — Reflection (Write in a Markdown cell)
+  Answer these in your notebook:
+    1. What chunk size worked best and why?
+    2. Did the retriever ever return irrelevant chunks? Give an example.
+    3. What would break this system? What are its limitations?
+
+
+BONUS CHALLENGES (Optional)
+-----------------------------
+  MMR Retrieval   -> Use search_type='mmr' to reduce redundant chunks
+  Metadata        -> Add chapter or page number to each chunk's metadata and display it in the answer
+  Conversational  -> Make it remember previous questions (use ConversationBufferMemory)
+  Evaluation      -> For 3 questions, manually check if the retrieved chunks actually contained the answer
+
+
+WHAT TO SUBMIT
+---------------
+A Jupyter notebook (.ipynb) with:
+  - All 7 steps completed with outputs
+  - At least 5 questions answered
+  - The RAG vs No-RAG comparison
+  - The reflection markdown cell

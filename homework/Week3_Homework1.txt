@@ -1,0 +1,163 @@
+Homework 1 — Essay Writing Agent with Tavily Search and ReAct
+=============================================================
+
+WHAT YOU WILL BUILD
+--------------------
+An AI agent that researches a topic on the internet using Tavily Search
+and writes a well-structured essay — autonomously, step by step.
+
+The agent uses the ReAct framework:
+  Thought: I need to find information about climate change.
+  Action:  tavily_search("climate change causes and effects 2024")
+  Observation: [search results returned]
+  Thought: I have enough facts. Now I'll search for solutions.
+  Action:  tavily_search("climate change solutions renewable energy")
+  Observation: [more results]
+  Thought: I have all I need. Let me write the essay.
+  Final Answer: [full essay]
+
+
+WHAT IS TAVILY?
+----------------
+Tavily is a search API designed for AI agents — it returns clean,
+summarised results (not raw HTML) that are easy for LLMs to read.
+
+Sign up for a free API key at: https://tavily.com
+Free tier includes 1,000 searches/month — more than enough for this homework.
+
+Install:
+  pip install tavily-python langchain-community
+
+
+PREREQUISITES
+--------------
+- Week 3 notebooks 3.1 to 3.4 completed (especially 3.4 ReAct from scratch)
+- Tavily API key (free at tavily.com)
+- Ollama running with llama3.1 pulled
+
+
+STEP-BY-STEP INSTRUCTIONS
+--------------------------
+
+Step 1 — Set Up Tavily
+  - Sign up at tavily.com and copy your API key
+  - Set it as an environment variable:
+      import os
+      os.environ['TAVILY_API_KEY'] = 'your-key-here'
+  - Test it:
+      from tavily import TavilyClient
+      client = TavilyClient(api_key=os.environ['TAVILY_API_KEY'])
+      result = client.search('What is the ReAct framework in AI?')
+      print(result)
+
+Step 2 — Define the Tavily Search Tool
+  Using the @tool decorator, wrap Tavily search:
+
+      from langchain_core.tools import tool
+      from tavily import TavilyClient
+
+      @tool
+      def tavily_search(query: str) -> str:
+          """Searches the internet for current information on a topic.
+          Use this to find facts, statistics, and recent news.
+          Example: tavily_search("climate change effects 2024")
+          """
+          client = TavilyClient(api_key=os.environ['TAVILY_API_KEY'])
+          results = client.search(query, max_results=3)
+          # Format the results into readable text
+          output = []
+          for r in results['results']:
+              output.append(f"Source: {r['url']}\n{r['content']}")
+          return '\n\n'.join(output)
+
+Step 3 — Define the Essay Writing Tool
+  Create a tool that formats the final essay and saves it to a file:
+
+      @tool
+      def save_essay(title: str, content: str) -> str:
+          """Saves the final essay to a text file."""
+          filename = title.lower().replace(' ', '_') + '_essay.txt'
+          with open(filename, 'w') as f:
+              f.write(f"ESSAY: {title}\n")
+              f.write("=" * 50 + "\n\n")
+              f.write(content)
+          return f"Essay saved to {filename}"
+
+Step 4 — Build the ReAct Agent Loop
+  Use the ReAct pattern from notebook 3.4 — the model outputs:
+      Thought: ...
+      Action: tool_name
+      Action Input: the input
+  You parse this text and execute the tool, then feed the Observation back.
+
+  The SYSTEM PROMPT is critical — it must teach the model the exact format:
+
+      SYSTEM_PROMPT = """You are a research and essay writing agent.
+      You write well-structured essays by searching the internet for facts first.
+
+      You have these tools:
+      - tavily_search(query): searches the internet for current information
+      - save_essay(title, content): saves the final essay to a file
+
+      Use this EXACT format:
+      Thought: [your reasoning]
+      Action: [tool name]
+      Action Input: [input to the tool]
+      Observation: [tool result — filled in for you]
+      ... repeat as needed ...
+      Thought: I have enough information to write the essay.
+      Final Answer: [your complete essay here]
+
+      Essay structure:
+        - Introduction (3-4 sentences)
+        - Section 1 with facts from your research
+        - Section 2 with more findings
+        - Conclusion
+
+      Always search at least 3 times before writing the essay."""
+
+Step 5 — Test With These Essay Topics
+  Run your agent on at least 3 of these topics:
+
+    1. "The Impact of Artificial Intelligence on Jobs"
+    2. "Climate Change: Causes, Effects, and Solutions"
+    3. "The Rise of Electric Vehicles"
+    4. "Social Media and Mental Health"
+    5. "Space Exploration in the 21st Century"
+    6. A topic of your own choice
+
+Step 6 — Observe the ReAct Loop
+  For each essay, print every step clearly:
+    - Which Thought the agent had
+    - Which tool it called and with what input
+    - What the Observation (result) was
+    - How many search calls it made before writing
+
+Step 7 — Reflection (Write in a Markdown cell)
+  Answer these in your notebook:
+    1. How many searches did the agent make before writing? Was that enough?
+    2. Did the agent ever search for something irrelevant? Why?
+    3. What would happen if Tavily returned no results for a query?
+    4. How is this different from just asking the LLM directly (without search)?
+
+
+BONUS CHALLENGES (Optional)
+-----------------------------
+  Source citations  -> Make the agent include the source URL for every fact
+  Word limit tool   -> Add a tool that counts words and tells the agent if
+                       the essay is too short (under 300 words)
+  Multi-language    -> Have the agent write the essay in a language of your choice
+  Comparison essay  -> Pick two topics and write an essay comparing them,
+                       searching facts for both sides
+  Self-critique     -> After writing, have the agent search for counterarguments
+                       and add a "Counter-arguments" section to the essay
+
+
+WHAT TO SUBMIT
+---------------
+A Jupyter notebook (.ipynb) with:
+  - Tavily search tool set up and tested
+  - ReAct agent loop implemented
+  - At least 3 essays generated with full Thought/Action/Observation logs printed
+  - The saved .txt essay files
+  - The reflection markdown cell filled in

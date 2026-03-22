@@ -1,0 +1,226 @@
+Homework 2 — Multi-Agent Coffee Sales Analyst
+==============================================
+
+WHAT YOU WILL BUILD
+--------------------
+A pipeline of 4 specialised agents that work together to analyse
+coffee sales data stored in a SQLite database:
+
+  User Question
+       |
+       v
+  [Agent 1: SQL Writer]      -- writes a SQL query from natural language
+       |
+       v
+  [Agent 2: SQL Validator]   -- checks the query for errors before running
+       |
+       v
+   Execute Query on DB
+       |
+       v
+  [Agent 3: Graph Plotter]   -- writes Python code to plot the results
+       |
+       v
+  [Agent 4: Graph Reviewer]  -- reviews the graph and writes a business insight
+
+Example flow:
+  User: "Show me monthly revenue for 2024"
+  Agent 1 writes: SELECT strftime('%Y-%m', date) as month, SUM(revenue) ...
+  Agent 2 validates: Query looks correct, no issues found.
+  Agent 3 plots:   A bar chart of monthly revenue saved as chart.png
+  Agent 4 reviews: "Revenue peaked in December. Q4 outperformed Q1 by 40%."
+
+
+PREREQUISITES
+--------------
+- Week 3 notebook 3.6 (Multi-Agent Systems) completed
+- pip install matplotlib pandas
+
+
+STEP-BY-STEP INSTRUCTIONS
+--------------------------
+
+Step 1 — Create the Coffee Sales Database
+  Build a SQLite database with realistic coffee shop sales data.
+  Your database must have at least these tables:
+
+  Table: sales
+  +------------+----------+----------+--------+----------+----------+
+  | id         | date     | product  | qty    | price    | revenue  |
+  +------------+----------+----------+--------+----------+----------+
+  | 1          |2024-01-03| Espresso | 12     | 3.50     | 42.00    |
+  | 2          |2024-01-03| Latte    | 8      | 4.80     | 38.40    |
+  | ...        | ...      | ...      | ...    | ...      | ...      |
+  +------------+----------+----------+--------+----------+----------+
+
+  Table: products
+  +----------+----------+----------+----------+
+  | product  | category | cost     | price    |
+  +----------+----------+----------+----------+
+  | Espresso | Hot      | 0.80     | 3.50     |
+  | Latte    | Hot      | 1.20     | 4.80     |
+  | ...      | ...      | ...      | ...      |
+  +----------+----------+----------+----------+
+
+  Seed at least:
+  - 6 products (e.g. Espresso, Latte, Cappuccino, Cold Brew, Matcha, Hot Chocolate)
+  - 12 months of daily sales data for 2024 (you can generate this with random data)
+
+  Tip: Use Python's random module to generate realistic sales numbers.
+  Coffee sells more on weekdays, more in winter for hot drinks, etc.
+
+
+Step 2 — Agent 1: SQL Writer
+  This agent receives a plain English question and writes a SQL query.
+
+  System prompt guidance:
+    - You are an expert SQL analyst for a coffee shop database.
+    - The database has a 'sales' table and a 'products' table.
+    - Write clean, correct SQLite-compatible SQL queries.
+    - Always return ONLY the SQL query, nothing else.
+    - Never use features not supported by SQLite.
+
+  Test with these questions:
+    - "What is the total revenue for each product?"
+    - "Show me monthly revenue for 2024"
+    - "Which product had the highest sales in Q4?"
+    - "What is the average daily revenue?"
+    - "Compare hot vs cold drink sales by quantity"
+
+
+Step 3 — Agent 2: SQL Validator
+  This agent receives the SQL query from Agent 1 and checks it.
+
+  The validator should check for:
+    - Correct table names (sales, products)
+    - Correct column names (date, product, qty, price, revenue, category, cost)
+    - Valid SQLite syntax (no MySQL/PostgreSQL-only features)
+    - Potentially harmful queries (DROP, DELETE, UPDATE — reject these)
+    - Missing GROUP BY when using aggregations
+
+  Output format:
+    VALID: <yes or no>
+    ISSUES: <list any problems found, or "None">
+    FIXED QUERY: <corrected query if there were issues, otherwise same query>
+
+  If VALID is "no", the pipeline should stop and report the error.
+
+
+Step 4 — Execute the Validated Query
+  Once Agent 2 approves the query, run it against the SQLite database
+  using Python's sqlite3 module and return the results as a list of rows.
+
+  Always:
+  - Catch SQL execution errors and return a clear error message
+  - Limit results to 100 rows maximum to avoid memory issues
+  - Return both the column names and the data rows
+
+
+Step 5 — Agent 3: Graph Plotter
+  This agent receives the query results (columns + rows) and writes
+  Python/matplotlib code to create the most appropriate chart.
+
+  The agent must:
+    - Decide the best chart type based on the data:
+        * Time series data  → line chart
+        * Category comparison → bar chart
+        * Proportions → pie chart
+        * Two numeric variables → scatter plot
+    - Write the complete Python matplotlib code as a string
+    - The code must save the chart as 'coffee_analysis.png'
+
+  Important: Execute the generated Python code using exec() and confirm
+  the file was saved.
+
+  System prompt guidance:
+    - You are a data visualisation expert.
+    - Write complete, runnable matplotlib Python code.
+    - Always include: title, axis labels, legend if needed, and tight_layout().
+    - Always end with: plt.savefig('coffee_analysis.png', dpi=150, bbox_inches='tight')
+    - Use a professional color palette (avoid default blue only).
+
+
+Step 6 — Agent 4: Graph Reviewer
+  This agent receives:
+    - The original user question
+    - The SQL query that was run
+    - The raw data results (column names + rows)
+    - Confirmation that the chart was saved
+
+  The reviewer must write a short business report (3-5 sentences) that:
+    - Directly answers the user's original question
+    - Highlights the most important finding
+    - Points out any trend, peak, or anomaly
+    - Gives one actionable recommendation for the coffee shop owner
+
+
+Step 7 — Connect All 4 Agents into a Pipeline
+  Write an orchestrator function:
+
+      def analyse(question: str) -> dict:
+          """Run the full 4-agent pipeline."""
+          # 1. Write SQL
+          sql = sql_writer_agent(question)
+
+          # 2. Validate SQL
+          validation = sql_validator_agent(sql)
+          if not validation['valid']:
+              return {'error': validation['issues']}
+
+          # 3. Execute query
+          results = execute_query(validation['fixed_query'])
+
+          # 4. Plot graph
+          chart_path = graph_plotter_agent(question, results)
+
+          # 5. Review
+          insight = graph_reviewer_agent(question, sql, results)
+
+          return {
+              'question':  question,
+              'sql':       sql,
+              'chart':     chart_path,
+              'insight':   insight,
+          }
+
+Step 8 — Test With 5 Questions
+  Run analyse() with all 5 of these questions and display each chart:
+
+    1. "What is the total revenue for each product?"
+    2. "Show me monthly revenue trend for 2024"
+    3. "Which day of the week has the highest sales?"
+    4. "What is the revenue split between hot and cold drinks?"
+    5. "Show me the top 3 best-selling products each quarter"
+
+Step 9 — Reflection (Write in a Markdown cell)
+  Answer these in your notebook:
+    1. What happened when Agent 2 (Validator) caught an error? Did the pipeline
+       stop gracefully?
+    2. Did Agent 3 always choose the right chart type? Give one example where
+       it did well and one where you would have chosen differently.
+    3. What is the advantage of having 4 separate agents instead of one agent
+       doing everything?
+    4. What could go wrong if you skipped the Validator agent?
+
+
+BONUS CHALLENGES (Optional)
+-----------------------------
+  Human approval     -> Add a step where the user sees the SQL query and
+                        must type "approve" before it runs (like notebook 3.8)
+  Auto-fix loop      -> If Agent 2 finds issues, send the fixed query back
+                        to Agent 1 to rewrite — loop until valid
+  Second chart       -> Have Agent 3 always produce two charts (e.g. bar + line)
+                        and have Agent 4 compare them
+  Export report      -> Have Agent 4 save the insight + chart to a PDF report
+  More tables        -> Add a 'customers' table and write queries that JOIN
+                        sales with customer data
+
+
+WHAT TO SUBMIT
+---------------
+A Jupyter notebook (.ipynb) with:
+  - SQLite database created and seeded (Step 1)
+  - All 4 agents defined with clear system prompts
+  - The analyse() orchestrator function
+  - All 5 questions run with printed agent outputs and displayed charts
+  - The reflection markdown cell filled in
